@@ -68,4 +68,40 @@ CREATE UNIQUE INDEX UniqueMainTrainerPerActivity
 ON ActivityTrainer(ActivityId)
 WHERE TrainerType = 'Glavni';
 
+CREATE OR REPLACE FUNCTION CheckCapacityOfActivity()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (SELECT COUNT(*) FROM ActivityParticipant WHERE ActivityId = NEW.ActivityId) >=
+       (SELECT Capacity FROM Schedule WHERE ActivityId = NEW.ActivityId) THEN
+        RAISE EXCEPTION 'Activity je pun, ne moze stat vise sudionika!';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
+CREATE TRIGGER CheckCapacityOfActivityBeforeInsert
+BEFORE INSERT ON ActivityParticipant
+FOR EACH ROW
+EXECUTE FUNCTION CheckCapacityOfActivity();
+
+
+
+CREATE OR REPLACE FUNCTION CheckTrainerLimit()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (SELECT COUNT(*) 
+        FROM ActivityTrainer AT
+        JOIN Schedule S ON AT.ActivityId = S.ActivityId
+        WHERE AT.TrainerId = NEW.TrainerId 
+        AND AT.TrainerType = 'Glavni'
+        AND S.Time > CURRENT_TIMESTAMP) >= 2 THEN
+        RAISE EXCEPTION 'Trener vec vodi 2 aktivnosti kao glavni trener!';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER TrainerLimit
+BEFORE INSERT ON ActivityTrainer
+FOR EACH ROW
+EXECUTE FUNCTION CheckTrainerLimit();
