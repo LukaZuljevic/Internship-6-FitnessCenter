@@ -1,6 +1,6 @@
 CREATE TABLE Country(
     CountryId SERIAL PRIMARY KEY,
-    Name VARCHAR(50) NOT NULL,
+    Name VARCHAR(50) NOT NULL UNIQUE,
     AverageSalary FLOAT DEFAULT 0 CHECK(AverageSalary >= 0),
     Population INT CHECK(Population > 0)
 );
@@ -20,7 +20,8 @@ CREATE TABLE Trainer(
     BirthDate TIMESTAMP CHECK(BirthDate < CURRENT_TIMESTAMP),
     Sex VARCHAR(30) CHECK (Sex IN ('Muski', 'Zenski', 'Nepoznato', 'Ostalo')),
     CountryId INT References Country(CountryId),
-    CenterId INT References Center(CenterId)
+    CenterId INT References Center(CenterId),
+    UNIQUE(TrainerId, CenterId)
 );
 
 CREATE TABLE ActivityType(
